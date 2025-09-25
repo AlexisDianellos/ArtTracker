@@ -7,11 +7,13 @@ import com.artgallery.tracker.model.Art;
 import com.artgallery.tracker.model.User;
 import com.artgallery.tracker.service.ArtService;
 import com.artgallery.tracker.service.UserService;
+import jakarta.mail.Multipart;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -28,8 +30,8 @@ public class ArtController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ArtDto> createArt(@AuthenticationPrincipal UserDetails userDetails, @RequestBody CreateArtDto createArtDto){
-        ArtDto createdArt=artService.createArt(createArtDto,userDetails.getUsername());//jwt sub is set to email so get username act returns email
+    public ResponseEntity<ArtDto> createArt(@AuthenticationPrincipal UserDetails userDetails, @RequestPart("art") CreateArtDto createArtDto, @RequestPart("image")MultipartFile imageFile){
+        ArtDto createdArt=artService.createArt(createArtDto,imageFile,userDetails.getUsername());//jwt sub is set to email so get username act returns email
         return ResponseEntity.ok(createdArt);
     }
     @GetMapping("/")
