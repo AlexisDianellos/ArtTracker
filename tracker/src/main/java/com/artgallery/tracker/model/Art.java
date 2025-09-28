@@ -17,7 +17,7 @@ public class Art {
     @Column(nullable = false)
     private String description;
     @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false) // foreign key column in "art" table
+    @JoinColumn(name = "user_id", nullable = false) // fk column in art table
     private User user;
 
     public Art(){}

@@ -7,7 +7,7 @@ public class ArtDto {
     private String description;
     private String username;//only exposes email(username) instead of user object
 
-    private String imageUrl;//s3bucket image's pre-signed url
+    private String imageUrl;//s3bucket images pre-signed url
 
     public ArtDto(Long id, String name, String image, String description, String username, String imageUrl) {
         this.id = id;
