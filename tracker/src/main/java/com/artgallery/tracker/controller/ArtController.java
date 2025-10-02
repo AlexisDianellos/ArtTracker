@@ -39,4 +39,10 @@ public class ArtController {
         Page<ArtDto> allArt=artService.getAllArt(page,size);
         return ResponseEntity.ok(allArt);
     }
+
+    @GetMapping("/foryou")
+    public ResponseEntity<Page<ArtDto>> foryouArt(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "1") int size,@AuthenticationPrincipal UserDetails userDetails){
+        Page<ArtDto> foryouArt=artService.getForyouArt(page,size,userDetails.getUsername());
+        return ResponseEntity.ok(foryouArt);
+    }
 }

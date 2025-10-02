@@ -10,11 +10,14 @@ import com.artgallery.tracker.s3.S3Service;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -22,21 +25,61 @@ import java.util.UUID;
 public class ArtService {
     private final ArtRepository artRepository;
     private final UserRepository userRepository;
-
     private final S3Service s3Service;
+
+    private final ArtReactionService artReactionService;
 
     @Value("${AWS_BUCKET_NAME}")
     private String bucketName;
 
-    public ArtService(ArtRepository artRepository,UserRepository userRepository,S3Service s3Service) {
+    public ArtService(ArtRepository artRepository,UserRepository userRepository,S3Service s3Service,ArtReactionService artReactionService) {
         this.artRepository = artRepository;
         this.userRepository=userRepository;
         this.s3Service=s3Service;
+        this.artReactionService=artReactionService;
     }
     public Page<ArtDto> getAllArt(int page,int size) {
         Pageable pageable = PageRequest.of(page,size);
         return artRepository.findAll(pageable)
                 .map(this::mapToDto);
+    }
+
+    public Page<ArtDto> getForyouArt(int page,int size, String email ) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(()->new RuntimeException("User not found"));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        List<Art> liked = artRepository.findLikedByUser(user.getId());//everything user has liked
+        System.out.println("DEBUG: Liked art IDs for user " + user.getId() + " = " +
+                liked.stream().map(Art::getId).toList());
+        Page<Art> unseen = artRepository.findUnseenArt(user.getId(), pageable);//everything user hasnt seen
+        System.out.println("DEBUG: Unseen art IDs (before ranking) = " +
+                unseen.getContent().stream().map(Art::getId).toList());
+
+        // for all art combined title + description of all into list w no dups ["","","",""]
+        List<String> keywords = liked.stream()
+                .flatMap(art -> Arrays.stream(
+                        (art.getName() + " " + art.getDescription())
+                                .toLowerCase()
+                                .split("\\s+")
+                ))
+                .distinct()
+                .toList();
+
+        System.out.println("DEBUG: Keyword profile = " + keywords);
+
+        List<ArtDto> ranked = unseen.getContent().stream()//get content gives both title and desc separately
+                .sorted((a, b) -> Integer.compare(score(b, keywords), score(a, keywords)))//a,b 2 art elements unseen returned
+                .map(this::mapToDto) // convert Art to ArtDto
+                .toList();
+
+        return new PageImpl<>(ranked, pageable, unseen.getTotalElements());
+
+    }
+    private int score(Art art, List<String> keywords) {
+        String text = (art.getName() + " " + art.getDescription()).toLowerCase();
+        return (int) keywords.stream().filter(text::contains).count();//1,2,3
     }
 
     @Transactional

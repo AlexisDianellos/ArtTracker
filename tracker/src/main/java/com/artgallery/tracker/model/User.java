@@ -28,6 +28,8 @@ public class User implements UserDetails {//UserDetails integrates w spring sec 
     @Column(name="verification_expiration")
     private LocalDateTime verificationCodeExpiresAt;
 
+
+
     //constructor for creating an unverified user
     public User(String username, String email, String password) {
         this.username = username;
